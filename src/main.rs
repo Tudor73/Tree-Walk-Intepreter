@@ -1,4 +1,9 @@
+pub mod scanner;
 use std::{env, io::Write, process};
+
+fn report_error(line: i32, message: String) {
+    println!("[line {line}] Error: {message}");
+}
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -14,9 +19,10 @@ fn main() {
 
 fn run_file(file_path: &String) {
     let content = std::fs::read_to_string(file_path).expect("File not found or something");
-    println!("{content}");
     println!("Running file {}", file_path);
+    run(content);
 }
+
 fn run_prompt() {
     let stdin = std::io::stdin();
     loop {
@@ -32,5 +38,11 @@ fn run_prompt() {
 }
 
 fn run(source: String) {
-    println!("{source}");
+    let mut scanner = scanner::scanner::new(source);
+
+    let tokens = scanner.scan_tokens();
+
+    for t in tokens.iter() {
+        println!("{:?}", t);
+    }
 }
