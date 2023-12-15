@@ -44,6 +44,7 @@ impl Scanner {
             .nth(self.current - 1)
             .expect("index out of range");
 
+        let token_type;
         match c {
             '(' => self.add_token(TokenType::LEFT_PAREN),
             ')' => self.add_token(TokenType::RIGHT_PAREN),
@@ -55,6 +56,55 @@ impl Scanner {
             '+' => self.add_token(TokenType::PLUS),
             ';' => self.add_token(TokenType::SEMICOLON),
             '*' => self.add_token(TokenType::STAR),
+            '!' => {
+                if self.match_char(c, '=') {
+                    token_type = TokenType::BANG_EQUAL;
+                    self.current += 1
+                } else {
+                    token_type = TokenType::BANG
+                };
+                self.add_token(token_type);
+            }
+            '=' => {
+                if self.match_char(c, '=') {
+                    token_type = TokenType::EQUAL_EQUAL;
+                    self.current += 1
+                } else {
+                    token_type = TokenType::EQUAL
+                };
+                self.add_token(token_type);
+            }
+            '<' => {
+                if self.match_char(c, '=') {
+                    token_type = TokenType::LESS_EQUAL;
+                    self.current += 1
+                } else {
+                    token_type = TokenType::LESS;
+                };
+                self.add_token(token_type);
+            }
+            '>' => {
+                if self.match_char(c, '=') {
+                    token_type = TokenType::GREATER_EQUAL;
+                    self.current += 1
+                } else {
+                    token_type = TokenType::GREATER;
+                };
+                self.add_token(token_type);
+            }
+            '/' => {
+                if self.match_char(c, '/') {
+                    while self.peek() != '\n' && !self.is_at_end() {
+                        self.current += 1
+                    }
+                } else {
+                    self.add_token(TokenType::SLASH);
+                }
+            }
+            '\n' => self.line += 1,
+            ' ' => (),
+            '\r' => (),
+            '\t' => (),
             _ => {
                 let mut error_message = String::from("Unexpected character. ");
                 error_message.push(c);
@@ -78,5 +128,30 @@ impl Scanner {
             literal: String::from(""),
             line: self.line,
         })
+    }
+
+    fn match_char(&self, c: char, expected: char) -> bool {
+        if self.is_at_end() {
+            return false;
+        }
+        if c != expected {
+            return false;
+        }
+        return true;
+    }
+
+    fn peek(&self) -> char {
+        if self.is_at_end() {
+            return '\0';
+        }
+        return self
+            .source
+            .chars()
+            .nth(self.current)
+            .expect("Index out of range");
+    }
+
+    fn is_at_end(&self) -> bool {
+        return self.current >= self.source.len();
     }
 }
