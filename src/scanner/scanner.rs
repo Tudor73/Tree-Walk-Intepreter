@@ -1,6 +1,6 @@
 use crate::report_error;
 
-use super::token::{LiteralType, Token, TokenType};
+use super::token::{LiteralType, Token, TokenType, KEYWORDS};
 pub struct Scanner {
     pub source: String,
     tokens: Vec<Token>,
@@ -107,6 +107,8 @@ impl Scanner {
             _ => {
                 if is_digit(c) {
                     self.number();
+                } else if is_alpha(c) {
+                    self.identifier();
                 } else {
                     let mut error_message = String::from("Unexpected character. ");
                     error_message.push(c);
@@ -202,6 +204,18 @@ impl Scanner {
         let value: f32 = substr.parse().expect("error when parsing number");
         self.add_token(TokenType::NUMBER, Some(LiteralType::Float(value)));
     }
+
+    fn identifier(&mut self) {
+        while is_alpha_numeric(self.peek()) {
+            self.current += 1;
+        }
+        let text = get_substr(&self.source, self.start, self.current - self.start);
+        if let Some(token_type) = KEYWORDS.get(text.as_str()) {
+            self.add_token(token_type.clone(), None);
+        } else {
+            self.add_token(TokenType::IDENTIFIER, None);
+        }
+    }
 }
 
 fn get_substr(str: &String, start: usize, size: usize) -> String {
@@ -213,4 +227,12 @@ fn is_digit(c: char) -> bool {
         return true;
     }
     return false;
+}
+
+fn is_alpha(c: char) -> bool {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+}
+
+fn is_alpha_numeric(c: char) -> bool {
+    return is_alpha(c) || is_digit(c);
 }

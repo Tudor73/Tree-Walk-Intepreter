@@ -1,3 +1,4 @@
-// this is a comment
 (( )){} // grouping stuff
+4 + 5 = 10.012
 !*+-/=<> <= == // operators
+"aaaa asdasd "

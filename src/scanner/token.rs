@@ -1,4 +1,5 @@
-use std::fmt;
+use lazy_static::lazy_static;
+use std::{collections::HashMap, fmt};
 
 #[derive(Debug)]
 pub struct Token {
@@ -10,7 +11,7 @@ pub struct Token {
 
 #[derive(PartialEq)]
 #[allow(non_camel_case_types)]
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TokenType {
     // Single-character tokens.
     LEFT_PAREN,
@@ -67,4 +68,27 @@ impl fmt::Debug for LiteralType {
             LiteralType::Float(d) => write!(f, "{}", d),
         }
     }
+}
+
+lazy_static! {
+    pub static ref KEYWORDS: HashMap<&'static str, TokenType> = {
+        let mut map = HashMap::new();
+        map.insert("and", TokenType::AND);
+        map.insert("class", TokenType::CLASS);
+        map.insert("else", TokenType::ELSE);
+        map.insert("false", TokenType::FALSE);
+        map.insert("for", TokenType::FOR);
+        map.insert("fun", TokenType::FUN);
+        map.insert("if", TokenType::IF);
+        map.insert("nil", TokenType::NIL);
+        map.insert("or", TokenType::OR);
+        map.insert("print", TokenType::PRINT);
+        map.insert("return", TokenType::RETURN);
+        map.insert("super", TokenType::SUPER);
+        map.insert("this", TokenType::THIS);
+        map.insert("true", TokenType::TRUE);
+        map.insert("var", TokenType::VAR);
+        map.insert("while", TokenType::WHILE);
+        map
+    };
 }
