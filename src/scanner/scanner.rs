@@ -1,6 +1,6 @@
 use crate::report_error;
 
-use super::token::{Token, TokenType};
+use super::token::{LiteralType, Token, TokenType};
 pub struct Scanner {
     pub source: String,
     tokens: Vec<Token>,
@@ -30,7 +30,7 @@ impl Scanner {
         self.tokens.push(Token {
             token_type: super::token::TokenType::EOF,
             lexeme: String::from(""),
-            literal: String::from(""),
+            literal: LiteralType::String(String::from("")),
             line: self.line,
         });
         return &self.tokens;
@@ -105,22 +105,21 @@ impl Scanner {
             ' ' | '\r' | '\t' => (),
             '"' => self.string_literal(),
             _ => {
-                let mut error_message = String::from("Unexpected character. ");
-                error_message.push(c);
-                report_error(self.line, error_message);
-                self.error = true;
+                if is_digit(c) {
+                    self.number();
+                } else {
+                    let mut error_message = String::from("Unexpected character. ");
+                    error_message.push(c);
+                    report_error(self.line, error_message);
+                    self.error = true;
+                }
             }
         }
     }
 
-    fn add_token(&mut self, token_type: TokenType, literal: Option<String>) {
-        let text = self
-            .source
-            .chars()
-            .skip(self.start)
-            .take(self.current - self.start)
-            .collect();
-        let value = literal.unwrap_or(String::from(""));
+    fn add_token(&mut self, token_type: TokenType, literal: Option<LiteralType>) {
+        let text = get_substr(&self.source, self.start, self.current - self.start);
+        let value = literal.unwrap_or(LiteralType::String(String::from("")));
         self.tokens.push(Token {
             token_type,
             lexeme: text,
@@ -156,6 +155,17 @@ impl Scanner {
             .expect("Index out of range");
     }
 
+    fn peek_next(&self) -> char {
+        if self.current + 1 >= self.source.len() {
+            return '\0';
+        }
+        return self
+            .source
+            .chars()
+            .nth(self.current + 1)
+            .expect("Index out of range");
+    }
+
     fn is_at_end(&self) -> bool {
         return self.current >= self.source.len();
     }
@@ -172,12 +182,35 @@ impl Scanner {
             return;
         }
         self.current += 1;
-        let value: String = self
-            .source
-            .chars()
-            .skip(self.start + 1)
-            .take(self.current - self.start - 2)
-            .collect();
-        self.add_token(TokenType::STRING, Some(value));
+
+        let value = get_substr(&self.source, self.start + 1, self.current - self.start - 2);
+        self.add_token(TokenType::STRING, Some(LiteralType::String(value)));
     }
+
+    fn number(&mut self) {
+        while is_digit(self.peek()) {
+            self.current += 1;
+        }
+        if self.peek() == '.' && is_digit(self.peek_next()) {
+            self.current += 1;
+
+            while is_digit(self.peek()) {
+                self.current += 1;
+            }
+        }
+        let substr: String = get_substr(&self.source, self.start, self.current - self.start);
+        let value: f32 = substr.parse().expect("error when parsing number");
+        self.add_token(TokenType::NUMBER, Some(LiteralType::Float(value)));
+    }
+}
+
+fn get_substr(str: &String, start: usize, size: usize) -> String {
+    return str.chars().skip(start).take(size).collect();
+}
+
+fn is_digit(c: char) -> bool {
+    if c >= '0' && c <= '9' {
+        return true;
+    }
+    return false;
 }

@@ -1,11 +1,14 @@
+use std::fmt;
+
 #[derive(Debug)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
-    pub literal: String,
+    pub literal: LiteralType,
     pub line: i32,
 }
 
+#[derive(PartialEq)]
 #[allow(non_camel_case_types)]
 #[derive(Debug)]
 pub enum TokenType {
@@ -52,4 +55,16 @@ pub enum TokenType {
     VAR,
     WHILE,
     EOF,
+}
+pub enum LiteralType {
+    String(String),
+    Float(f32),
+}
+impl fmt::Debug for LiteralType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            LiteralType::String(s) => write!(f, "{:?}", s),
+            LiteralType::Float(d) => write!(f, "{}", d),
+        }
+    }
 }
