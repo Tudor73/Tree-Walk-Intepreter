@@ -1,3 +1,4 @@
+pub mod parser;
 pub mod scanner;
 use std::{env, io::Write, process};
 
