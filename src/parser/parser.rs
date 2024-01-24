@@ -1,9 +1,5 @@
-use std::{
-    fmt::{format, Error},
-    vec,
-};
-
 use crate::scanner::token::{LiteralType, Token};
+use std::vec;
 
 use super::expression::{Binary, Expr, Grouping, Literal, Unary};
 use crate::scanner::token::TokenType;
