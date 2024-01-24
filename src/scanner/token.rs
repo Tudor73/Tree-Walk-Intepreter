@@ -1,7 +1,7 @@
 use lazy_static::lazy_static;
 use std::{collections::HashMap, fmt};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
@@ -57,15 +57,20 @@ pub enum TokenType {
     WHILE,
     EOF,
 }
+#[derive(Clone)]
 pub enum LiteralType {
     String(String),
     Float(f32),
+    Bool(bool),
+    Null(String),
 }
 impl fmt::Debug for LiteralType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             LiteralType::String(s) => write!(f, "{:?}", s),
             LiteralType::Float(d) => write!(f, "{}", d),
+            LiteralType::Bool(b) => write!(f, "{}", b),
+            LiteralType::Null(n) => write!(f, "{:?}", n),
         }
     }
 }

@@ -2,12 +2,51 @@ pub mod parser;
 pub mod scanner;
 use std::{env, io::Write, process};
 
+use scanner::token::LiteralType;
+use scanner::token::Token;
+use scanner::token::TokenType;
+
+use crate::parser::expression::AstPrinter;
+use crate::parser::expression::Binary;
+use crate::parser::expression::Expr;
+use crate::parser::expression::Grouping;
+use crate::parser::expression::Literal;
+use crate::parser::expression::Unary;
+
 fn report_error(line: i32, message: String) {
     println!("[line {line}] Error: {message}");
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+
+    let expression: Expr = Expr::Binary(Binary {
+        operator: Token {
+            token_type: TokenType::STAR,
+            lexeme: String::from("*"),
+            literal: LiteralType::String(String::from("")),
+            line: 1,
+        },
+        left: Box::new(Expr::Unary(Unary {
+            operator: Token {
+                token_type: TokenType::MINUS,
+                lexeme: String::from("-"),
+                literal: LiteralType::String(String::from("")),
+                line: 1,
+            },
+            right: Box::new(Expr::Literal(Literal {
+                value: LiteralType::Float(123.0),
+            })),
+        })),
+        right: Box::new(Expr::Grouping(Grouping {
+            expression: Box::new(Expr::Literal(Literal {
+                value: LiteralType::Float(45.67),
+            })),
+        })),
+    });
+
+    let mut printer: AstPrinter = AstPrinter {};
+    println!("{}", printer.print(expression));
     if args.len() > 2 {
         println!("Too many arguments");
         process::exit(1);
