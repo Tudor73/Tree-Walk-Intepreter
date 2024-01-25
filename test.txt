@@ -1,5 +1,3 @@
-(( )){} // grouping stuff
-4 + 5 = 10.01234
-!*+-/=<> <= == // operators
-"aaaa asdasd "
-return
+
+
+(4 * 6) + 4;

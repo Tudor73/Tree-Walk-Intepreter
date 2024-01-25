@@ -2,6 +2,7 @@ pub mod parser;
 pub mod scanner;
 use std::{env, io::Write, process};
 
+use parser::parser::Parser;
 use scanner::token::LiteralType;
 use scanner::token::Token;
 use scanner::token::TokenType;
@@ -20,33 +21,31 @@ fn report_error(line: i32, message: String) {
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    let expression: Expr = Expr::Binary(Binary {
-        operator: Token {
-            token_type: TokenType::STAR,
-            lexeme: String::from("*"),
-            literal: LiteralType::String(String::from("")),
-            line: 1,
-        },
-        left: Box::new(Expr::Unary(Unary {
-            operator: Token {
-                token_type: TokenType::MINUS,
-                lexeme: String::from("-"),
-                literal: LiteralType::String(String::from("")),
-                line: 1,
-            },
-            right: Box::new(Expr::Literal(Literal {
-                value: LiteralType::Float(123.0),
-            })),
-        })),
-        right: Box::new(Expr::Grouping(Grouping {
-            expression: Box::new(Expr::Literal(Literal {
-                value: LiteralType::Float(45.67),
-            })),
-        })),
-    });
+    // let expression: Expr = Expr::Binary(Binary {
+    //     operator: Token {
+    //         token_type: TokenType::STAR,
+    //         lexeme: String::from("*"),
+    //         literal: LiteralType::String(String::from("")),
+    //         line: 1,
+    //     },
+    //     left: Box::new(Expr::Unary(Unary {
+    //         operator: Token {
+    //             token_type: TokenType::MINUS,
+    //             lexeme: String::from("-"),
+    //             literal: LiteralType::String(String::from("")),
+    //             line: 1,
+    //         },
+    //         right: Box::new(Expr::Literal(Literal {
+    //             value: LiteralType::Float(123.0),
+    //         })),
+    //     })),
+    //     right: Box::new(Expr::Grouping(Grouping {
+    //         expression: Box::new(Expr::Literal(Literal {
+    //             value: LiteralType::Float(45.67),
+    //         })),
+    //     })),
+    // });
 
-    let mut printer: AstPrinter = AstPrinter {};
-    println!("{}", printer.print(expression));
     if args.len() > 2 {
         println!("Too many arguments");
         process::exit(1);
@@ -81,8 +80,17 @@ fn run(source: String) {
     let mut scanner = scanner::scanner::new(source);
 
     let tokens = scanner.scan_tokens();
+    // TO DO - return error from scan_tokens();
 
-    for t in tokens.iter() {
-        println!("{:?}", t);
-    }
+    let mut parser: Parser = Parser::new(tokens.clone());
+    let expression = match parser.parse() {
+        None => return,
+        Some(e) => e,
+    };
+
+    let mut printer: AstPrinter = AstPrinter {};
+    println!("{}", printer.print(expression));
+    // for t in tokens.iter() {
+    //     println!("{:?}", t);
+    // }
 }

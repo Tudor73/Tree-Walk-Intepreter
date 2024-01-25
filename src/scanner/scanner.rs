@@ -7,7 +7,7 @@ pub struct Scanner {
     start: usize,
     current: usize,
     line: i32,
-    error: bool,
+    pub error: bool,
 }
 
 pub fn new(source: String) -> Scanner {
