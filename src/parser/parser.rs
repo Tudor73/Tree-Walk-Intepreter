@@ -106,6 +106,7 @@ impl Parser {
     }
 
     fn primary(&mut self) -> Result<Expr, String> {
+        println!("{:?}", self.tokens[self.current]);
         if self.match_token(TokenType::FALSE) {
             return Ok(Expr::Literal(Literal {
                 value: LiteralType::Bool(false),
@@ -137,8 +138,7 @@ impl Parser {
             self.consume(
                 TokenType::RIGHT_PAREN,
                 String::from("Expect ')' after expression"),
-            )
-            .unwrap();
+            )?;
             return Ok(Expr::Grouping(Grouping {
                 expression: Box::new(expr),
             }));

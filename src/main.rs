@@ -3,16 +3,8 @@ pub mod scanner;
 use std::{env, io::Write, process};
 
 use parser::parser::Parser;
-use scanner::token::LiteralType;
-use scanner::token::Token;
-use scanner::token::TokenType;
 
 use crate::parser::expression::AstPrinter;
-use crate::parser::expression::Binary;
-use crate::parser::expression::Expr;
-use crate::parser::expression::Grouping;
-use crate::parser::expression::Literal;
-use crate::parser::expression::Unary;
 
 fn report_error(line: i32, message: String) {
     println!("[line {line}] Error: {message}");
@@ -80,6 +72,9 @@ fn run(source: String) {
     let mut scanner = scanner::scanner::new(source);
 
     let tokens = scanner.scan_tokens();
+    for t in tokens.iter() {
+        println!("{:?}", t);
+    }
     // TO DO - return error from scan_tokens();
 
     let mut parser: Parser = Parser::new(tokens.clone());

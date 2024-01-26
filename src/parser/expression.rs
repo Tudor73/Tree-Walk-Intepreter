@@ -39,13 +39,56 @@ impl Expr {
         V: ExprVisitor,
     {
         match self {
-            Expr::Binary(b) => visitor.visit_binary_expr(b),
-            Expr::Unary(b) => visitor.visit_unary_expr(b),
-            Expr::Literal(b) => visitor.visit_literal_expr(b),
-            Expr::Grouping(b) => visitor.visit_grouping_expr(b),
+            Expr::Binary(b) => b.accept(visitor),
+            Expr::Unary(b) => b.accept(visitor),
+            Expr::Literal(b) => b.accept(visitor),
+            Expr::Grouping(b) => b.accept(visitor),
         }
     }
 }
+
+impl Binary {
+    pub fn accept<V>(&self, visitor: &mut V) -> String
+    where
+        V: ExprVisitor,
+    {
+        return visitor.visit_binary_expr(self);
+    }
+}
+
+impl Unary {
+    pub fn accept<V>(&self, visitor: &mut V) -> String
+    where
+        V: ExprVisitor,
+    {
+        return visitor.visit_unary_expr(self);
+    }
+}
+
+impl Literal {
+    pub fn accept<V>(&self, visitor: &mut V) -> String
+    where
+        V: ExprVisitor,
+    {
+        return visitor.visit_literal_expr(self);
+    }
+}
+
+impl Grouping {
+    pub fn accept<V>(&self, visitor: &mut V) -> String
+    where
+        V: ExprVisitor,
+    {
+        return visitor.visit_grouping_expr(self);
+    }
+}
+// pub struct Interpreter;
+// impl ExprVisitor for Interpreter {
+//     fn visit_literal_expr(&mut self, expr: &Literal) -> LiteralType {
+//         return expr.value;
+//     }
+// }
+
 pub struct AstPrinter;
 impl ExprVisitor for AstPrinter {
     fn visit_binary_expr(&mut self, expr: &Binary) -> String {
