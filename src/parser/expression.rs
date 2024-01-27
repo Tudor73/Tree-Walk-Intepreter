@@ -26,18 +26,15 @@ pub struct Literal {
 pub struct Grouping {
     pub expression: Box<Expr>,
 }
-pub trait ExprVisitor {
-    fn visit_binary_expr(&mut self, expr: &Binary) -> String;
-    fn visit_unary_expr(&mut self, expr: &Unary) -> String;
-    fn visit_grouping_expr(&mut self, expr: &Grouping) -> String;
-    fn visit_literal_expr(&mut self, expr: &Literal) -> String;
+pub trait ExprVisitor<T> {
+    fn visit_binary_expr(&mut self, expr: &Binary) -> T;
+    fn visit_unary_expr(&mut self, expr: &Unary) -> T;
+    fn visit_grouping_expr(&mut self, expr: &Grouping) -> T;
+    fn visit_literal_expr(&mut self, expr: &Literal) -> T;
 }
 
 impl Expr {
-    pub fn accept<V>(&self, visitor: &mut V) -> String
-    where
-        V: ExprVisitor,
-    {
+    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
         match self {
             Expr::Binary(b) => b.accept(visitor),
             Expr::Unary(b) => b.accept(visitor),
@@ -48,37 +45,24 @@ impl Expr {
 }
 
 impl Binary {
-    pub fn accept<V>(&self, visitor: &mut V) -> String
-    where
-        V: ExprVisitor,
-    {
+    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
         return visitor.visit_binary_expr(self);
     }
 }
 
 impl Unary {
-    pub fn accept<V>(&self, visitor: &mut V) -> String
-    where
-        V: ExprVisitor,
-    {
+    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
         return visitor.visit_unary_expr(self);
     }
 }
-
 impl Literal {
-    pub fn accept<V>(&self, visitor: &mut V) -> String
-    where
-        V: ExprVisitor,
-    {
+    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
         return visitor.visit_literal_expr(self);
     }
 }
 
 impl Grouping {
-    pub fn accept<V>(&self, visitor: &mut V) -> String
-    where
-        V: ExprVisitor,
-    {
+    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> T {
         return visitor.visit_grouping_expr(self);
     }
 }
@@ -90,7 +74,7 @@ impl Grouping {
 // }
 
 pub struct AstPrinter;
-impl ExprVisitor for AstPrinter {
+impl ExprVisitor<String> for AstPrinter {
     fn visit_binary_expr(&mut self, expr: &Binary) -> String {
         let mut expressions: Vec<&Expr> = vec![];
         expressions.push(&*expr.left);
