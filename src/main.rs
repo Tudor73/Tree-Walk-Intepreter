@@ -84,7 +84,7 @@ fn run(source: String) {
     };
 
     let mut printer: AstPrinter = AstPrinter {};
-    println!("{}", printer.print(expression));
+    println!("{}", printer.print(expression).unwrap());
     // for t in tokens.iter() {
     //     println!("{:?}", t);
     // }
