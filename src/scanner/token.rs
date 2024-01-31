@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use std::{cmp::Ordering, collections::HashMap, fmt, ops::Add};
+use std::{clone, cmp::Ordering, collections::HashMap, fmt, ops::Add};
 
 #[derive(Debug, Clone)]
 pub struct Token {
@@ -62,7 +62,7 @@ pub enum LiteralType {
     String(String),
     Float(f32),
     Bool(bool),
-    Null(String),
+    Null,
 }
 
 impl Add for LiteralType {
@@ -84,7 +84,7 @@ impl PartialEq for LiteralType {
             (LiteralType::String(x), LiteralType::String(y)) => x == y,
             (LiteralType::Float(x), LiteralType::Float(y)) => x == y,
             (LiteralType::Bool(x), LiteralType::Bool(y)) => x == y,
-            (LiteralType::Null(x), LiteralType::Null(y)) => x == y,
+            (LiteralType::Null, LiteralType::Null) => return true,
             _ => false,
         }
     }
@@ -93,6 +93,13 @@ impl PartialEq for LiteralType {
 impl PartialOrd for LiteralType {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
+            (LiteralType::Null, o) => {
+                if o != &LiteralType::Null {
+                    return None;
+                } else {
+                    return Some(Ordering::Equal);
+                }
+            }
             (LiteralType::Float(x), LiteralType::Float(y)) => return x.partial_cmp(y),
             (LiteralType::String(x), LiteralType::String(y)) => return x.partial_cmp(y),
             (LiteralType::Bool(x), LiteralType::Bool(y)) => return x.partial_cmp(y),
@@ -107,7 +114,7 @@ impl fmt::Debug for LiteralType {
             LiteralType::String(s) => write!(f, "{:?}", s),
             LiteralType::Float(d) => write!(f, "{}", d),
             LiteralType::Bool(b) => write!(f, "{}", b),
-            LiteralType::Null(n) => write!(f, "{:?}", n),
+            LiteralType::Null => write!(f, "{:?}", "null"),
         }
     }
 }

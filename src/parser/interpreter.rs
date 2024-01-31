@@ -88,7 +88,7 @@ impl Interpreter {
     fn is_truthful(literal: LiteralType) -> Result<LiteralType, String> {
         match literal {
             LiteralType::Bool(_) => return Ok(literal),
-            LiteralType::Null(_) => return Ok(LiteralType::Bool(false)),
+            LiteralType::Null => return Ok(LiteralType::Bool(false)),
             _ => return Ok(LiteralType::Bool(false)),
         }
     }

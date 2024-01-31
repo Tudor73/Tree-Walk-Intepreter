@@ -85,7 +85,7 @@ impl ExprVisitor<String> for AstPrinter {
             LiteralType::String(s) => return Ok(s.clone()),
             LiteralType::Float(f) => return Ok(f.to_string()),
             LiteralType::Bool(b) => return Ok(b.to_string()),
-            LiteralType::Null(n) => return Ok(n.clone()),
+            LiteralType::Null => return Ok(String::from("null")),
         }
     }
 

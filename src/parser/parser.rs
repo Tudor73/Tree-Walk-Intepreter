@@ -120,7 +120,7 @@ impl Parser {
 
         if self.match_token(TokenType::NIL) {
             return Ok(Expr::Literal(Literal {
-                value: LiteralType::Null(String::from("null")),
+                value: LiteralType::Null,
             }));
         }
         if self.match_token(TokenType::NUMBER) {
