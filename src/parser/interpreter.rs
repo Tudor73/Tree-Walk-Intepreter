@@ -74,6 +74,9 @@ impl ExprVisitor<LiteralType> for Interpreter {
                 let comparison = if left_val <= right_val { true } else { false };
                 return Ok(LiteralType::Bool(comparison));
             }
+            // THIS MAY NOT WORK
+            TokenType::BANG_EQUAL => return Ok(LiteralType::Bool(left != right)),
+            TokenType::EQUAL_EQUAL => return Ok(LiteralType::Bool(left == right)),
 
             _ => return Err(String::from("unreachable ")),
         }

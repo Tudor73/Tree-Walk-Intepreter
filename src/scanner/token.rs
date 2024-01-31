@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use std::{clone, cmp::Ordering, collections::HashMap, fmt, ops::Add};
+use std::{cmp::Ordering, collections::HashMap, fmt, ops::Add};
 
 #[derive(Debug, Clone)]
 pub struct Token {
