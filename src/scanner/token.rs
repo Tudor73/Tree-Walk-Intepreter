@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use std::{collections::HashMap, fmt};
+use std::{cmp::Ordering, collections::HashMap, fmt, ops::Add};
 
 #[derive(Debug, Clone)]
 pub struct Token {
@@ -64,6 +64,43 @@ pub enum LiteralType {
     Bool(bool),
     Null(String),
 }
+
+impl Add for LiteralType {
+    type Output = Result<LiteralType, String>;
+    fn add(self, rhs: Self) -> Self::Output {
+        match (self, rhs) {
+            (LiteralType::Float(x), LiteralType::Float(y)) => return Ok(LiteralType::Float(x + y)),
+            (LiteralType::String(x), LiteralType::String(y)) => {
+                return Ok(LiteralType::String(format!("{}{}", x, y)))
+            }
+            _ => return Err(String::from("Invalid operand")),
+        }
+    }
+}
+
+impl PartialEq for LiteralType {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (LiteralType::String(x), LiteralType::String(y)) => x == y,
+            (LiteralType::Float(x), LiteralType::Float(y)) => x == y,
+            (LiteralType::Bool(x), LiteralType::Bool(y)) => x == y,
+            (LiteralType::Null(x), LiteralType::Null(y)) => x == y,
+            _ => false,
+        }
+    }
+}
+
+impl PartialOrd for LiteralType {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (self, other) {
+            (LiteralType::Float(x), LiteralType::Float(y)) => return x.partial_cmp(y),
+            (LiteralType::String(x), LiteralType::String(y)) => return x.partial_cmp(y),
+            (LiteralType::Bool(x), LiteralType::Bool(y)) => return x.partial_cmp(y),
+            _ => return None,
+        }
+    }
+}
+
 impl fmt::Debug for LiteralType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -71,6 +108,22 @@ impl fmt::Debug for LiteralType {
             LiteralType::Float(d) => write!(f, "{}", d),
             LiteralType::Bool(b) => write!(f, "{}", b),
             LiteralType::Null(n) => write!(f, "{:?}", n),
+        }
+    }
+}
+
+impl LiteralType {
+    pub fn get_number(&self) -> Result<f32, String> {
+        match self {
+            LiteralType::Float(f) => return Ok(f.clone()),
+            _ => return Err(String::from("Operand must be a number")),
+        }
+    }
+
+    pub fn get_string(&self) -> Result<String, String> {
+        match self {
+            LiteralType::String(f) => return Ok(f.clone()),
+            _ => return Err(String::from("Operand must be a number")),
         }
     }
 }
