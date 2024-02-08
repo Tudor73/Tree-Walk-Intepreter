@@ -2,7 +2,11 @@ pub mod parser;
 pub mod scanner;
 use std::{env, io::Write, process};
 
-use parser::parser::Parser;
+use parser::{
+    interpreter::{self, Interpreter, RuntimeError},
+    parser::Parser,
+};
+use scanner::token::Token;
 
 use crate::parser::expression::AstPrinter;
 
@@ -83,8 +87,18 @@ fn run(source: String) {
         Some(e) => e,
     };
 
-    let mut printer: AstPrinter = AstPrinter {};
-    println!("{}", printer.print(expression).unwrap());
+    // let mut interpreter = Interpreter {
+    //     runtime_error: RuntimeError {
+    //         message: String::from(""),
+    //         token: ,
+    //     },
+    // };
+    // match interpreter.interpret(expression) {
+    //     Ok(s) => println!("{}", s),
+    //     Err(e) => report_error(1, e),
+    // }
+    // let mut printer: AstPrinter = AstPrinter {};
+    // println!("{}", printer.print(expression).unwrap());
     // for t in tokens.iter() {
     //     println!("{:?}", t);
     // }

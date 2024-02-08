@@ -1,10 +1,18 @@
-use crate::scanner::token::{LiteralType, TokenType};
+use crate::scanner::token::{LiteralType, Token, TokenType};
 
 use super::expression::{self, Expr, ExprVisitor, Grouping, Literal};
 
 #[derive(Debug, Clone)]
 
-pub struct Interpreter;
+pub struct RuntimeError {
+    pub message: String,
+    pub token: Token,
+}
+
+pub struct Interpreter {
+    pub runtime_error: RuntimeError,
+}
+
 impl ExprVisitor<LiteralType> for Interpreter {
     fn visit_literal_expr(&mut self, expr: &Literal) -> Result<LiteralType, String> {
         return Ok(expr.value.clone());
@@ -84,6 +92,14 @@ impl ExprVisitor<LiteralType> for Interpreter {
 }
 
 impl Interpreter {
+    pub fn interpret(&mut self, expression: Expr) -> Result<String, String> {
+        let value = self.evaluate(&expression);
+        match value {
+            Ok(e) => return Ok(Interpreter::stringify(e)),
+            Err(e) => {}
+        };
+    }
+
     fn evaluate(&mut self, expr: &Expr) -> Result<LiteralType, String> {
         expr.accept(self)
     }
@@ -93,6 +109,14 @@ impl Interpreter {
             LiteralType::Bool(_) => return Ok(literal),
             LiteralType::Null => return Ok(LiteralType::Bool(false)),
             _ => return Ok(LiteralType::Bool(false)),
+        }
+    }
+    fn stringify(literal: LiteralType) -> String {
+        match literal {
+            LiteralType::Null => return String::from("nil"),
+            LiteralType::Float(f) => return f.to_string(),
+            LiteralType::Bool(b) => return b.to_string(),
+            LiteralType::String(s) => return s,
         }
     }
 }

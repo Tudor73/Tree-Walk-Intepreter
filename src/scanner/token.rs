@@ -73,7 +73,7 @@ impl Add for LiteralType {
             (LiteralType::String(x), LiteralType::String(y)) => {
                 return Ok(LiteralType::String(format!("{}{}", x, y)))
             }
-            _ => return Err(String::from("Invalid operand")),
+            _ => return Err(String::from("Operands must be two numbers or two strings")),
         }
     }
 }
