@@ -2,10 +2,7 @@ pub mod parser;
 pub mod scanner;
 use std::{env, io::Write, process};
 
-use parser::{
-    interpreter::{self, Interpreter, RuntimeError},
-    parser::Parser,
-};
+use parser::{interpreter::Interpreter, parser::Parser};
 
 fn report_error(line: i32, message: &str) {
     println!("[line {line}] Error: {message}");
@@ -79,14 +76,14 @@ fn run(source: String) {
 
     let mut parser: Parser = Parser::new(tokens.clone());
     let expression = match parser.parse() {
-        None => return,
-        Some(e) => e,
+        Err(_) => return,
+        Ok(e) => e,
     };
 
     let mut interpreter = Interpreter {};
     match interpreter.interpret(expression) {
-        Ok(s) => println!("{}", s),
         Err(e) => report_error(e.line, &e.message),
+        _ => (),
     }
     // let mut printer: AstPrinter = AstPrinter {};
     // println!("{}", printer.print(expression).unwrap());

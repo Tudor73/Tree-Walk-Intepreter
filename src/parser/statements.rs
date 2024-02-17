@@ -6,7 +6,7 @@ pub enum Stmt {
 }
 
 impl Stmt {
-    fn accept<T>(&self, visitor: &dyn StmtVisitor<T>) -> Result<T, RuntimeError> {
+    fn accept<T>(&self, visitor: &mut dyn StmtVisitor<T>) -> Result<T, RuntimeError> {
         match self {
             Stmt::Expression(e) => e.accept(visitor),
             Stmt::Print(e) => e.accept(visitor),
@@ -21,18 +21,18 @@ pub struct PrintStmt {
     pub expression: Expr,
 }
 pub trait StmtVisitor<T> {
-    fn visit_expression_stmt(&self, expr: &ExpressionStmt) -> Result<T, RuntimeError>;
-    fn visit_print_statment(&self, expr: &PrintStmt) -> Result<T, RuntimeError>;
+    fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> Result<T, RuntimeError>;
+    fn visit_print_statment(&mut self, stmt: &PrintStmt) -> Result<T, RuntimeError>;
 }
 
 impl ExpressionStmt {
-    fn accept<T>(&self, visitor: &dyn StmtVisitor<T>) -> Result<T, RuntimeError> {
+    pub fn accept<T>(&self, visitor: &mut dyn StmtVisitor<T>) -> Result<T, RuntimeError> {
         return visitor.visit_expression_stmt(self);
     }
 }
 
 impl PrintStmt {
-    fn accept<T>(&self, visitor: &dyn StmtVisitor<T>) -> Result<T, RuntimeError> {
+    pub fn accept<T>(&self, visitor: &mut dyn StmtVisitor<T>) -> Result<T, RuntimeError> {
         return visitor.visit_print_statment(self);
     }
 }

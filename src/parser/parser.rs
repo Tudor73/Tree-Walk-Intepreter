@@ -1,4 +1,4 @@
-use std::{os::macos::raw::stat, vec};
+use std::vec;
 
 use crate::{
     report_error,
@@ -33,21 +33,21 @@ impl Parser {
         return self.equality();
     }
 
-    fn statement(&self) -> Result<Stmt, RuntimeError> {
+    fn statement(&mut self) -> Result<Stmt, RuntimeError> {
         if self.match_token(TokenType::PRINT) {
             return self.print_statement();
         }
         return self.expression_statement();
     }
-    fn print_statement(&self) -> Result<Stmt, RuntimeError> {
+    fn print_statement(&mut self) -> Result<Stmt, RuntimeError> {
         let value = self.expression()?;
-        self.consume(TokenType::SEMICOLON, "Expect ';' after value. ".to_string());
+        self.consume(TokenType::SEMICOLON, "Expect ';' after value. ".to_string())?;
         return Ok(Stmt::Print(PrintStmt { expression: value }));
     }
 
-    fn expression_statement(&self) -> Result<Stmt, RuntimeError> {
+    fn expression_statement(&mut self) -> Result<Stmt, RuntimeError> {
         let value = self.expression()?;
-        self.consume(TokenType::SEMICOLON, "Expect ';' after value. ".to_string());
+        self.consume(TokenType::SEMICOLON, "Expect ';' after value. ".to_string())?;
         return Ok(Stmt::Expression(ExpressionStmt { expression: value }));
     }
 

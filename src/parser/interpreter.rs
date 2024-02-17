@@ -3,7 +3,10 @@ use crate::{
     scanner::token::{LiteralType, TokenType},
 };
 
-use super::expression::{self, Expr, ExprVisitor, Grouping, Literal};
+use super::{
+    expression::{self, Expr, ExprVisitor, Grouping, Literal},
+    statements::{self, ExpressionStmt, Stmt, StmtVisitor},
+};
 
 #[derive(Debug, Clone)]
 
@@ -109,13 +112,27 @@ impl ExprVisitor<LiteralType> for Interpreter {
     }
 }
 
+impl StmtVisitor<()> for Interpreter {
+    fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> Result<(), RuntimeError> {
+        self.evaluate(&stmt.expression)?;
+        return Ok(());
+    }
+    fn visit_print_statment(&mut self, stmt: &statements::PrintStmt) -> Result<(), RuntimeError> {
+        let value = Interpreter::stringify(self.evaluate(&stmt.expression)?);
+        println!("{}", value);
+        return Ok(());
+    }
+}
+
 impl Interpreter {
-    pub fn interpret(&mut self, expression: Expr) -> Result<String, RuntimeError> {
-        let value = self.evaluate(&expression);
-        match value {
-            Ok(e) => return Ok(Interpreter::stringify(e)),
-            Err(e) => return Err(e),
-        };
+    pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<(), RuntimeError> {
+        for stmt in statements.iter() {
+            match stmt {
+                Stmt::Expression(e) => e.accept(self)?,
+                Stmt::Print(e) => e.accept(self)?,
+            };
+        }
+        return Ok(());
     }
 
     fn evaluate(&mut self, expr: &Expr) -> Result<LiteralType, RuntimeError> {
