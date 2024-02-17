@@ -1,4 +1,6 @@
 use crate::scanner::token::{LiteralType, Token};
+
+use super::interpreter::RuntimeError;
 #[derive(Debug, Clone)]
 pub enum Expr {
     Binary(Binary),
@@ -27,14 +29,14 @@ pub struct Grouping {
     pub expression: Box<Expr>,
 }
 pub trait ExprVisitor<T> {
-    fn visit_binary_expr(&mut self, expr: &Binary) -> Result<T, String>;
-    fn visit_unary_expr(&mut self, expr: &Unary) -> Result<T, String>;
-    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<T, String>;
-    fn visit_literal_expr(&mut self, expr: &Literal) -> Result<T, String>;
+    fn visit_binary_expr(&mut self, expr: &Binary) -> Result<T, RuntimeError>;
+    fn visit_unary_expr(&mut self, expr: &Unary) -> Result<T, RuntimeError>;
+    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<T, RuntimeError>;
+    fn visit_literal_expr(&mut self, expr: &Literal) -> Result<T, RuntimeError>;
 }
 
 impl Expr {
-    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> Result<T, String> {
+    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> Result<T, RuntimeError> {
         match self {
             Expr::Binary(b) => b.accept(visitor),
             Expr::Unary(b) => b.accept(visitor),
@@ -45,42 +47,42 @@ impl Expr {
 }
 
 impl Binary {
-    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> Result<T, String> {
+    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> Result<T, RuntimeError> {
         return visitor.visit_binary_expr(self);
     }
 }
 
 impl Unary {
-    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> Result<T, String> {
+    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> Result<T, RuntimeError> {
         return visitor.visit_unary_expr(self);
     }
 }
 impl Literal {
-    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> Result<T, String> {
+    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> Result<T, RuntimeError> {
         return visitor.visit_literal_expr(self);
     }
 }
 
 impl Grouping {
-    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> Result<T, String> {
+    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> Result<T, RuntimeError> {
         return visitor.visit_grouping_expr(self);
     }
 }
 
 pub struct AstPrinter;
 impl ExprVisitor<String> for AstPrinter {
-    fn visit_binary_expr(&mut self, expr: &Binary) -> Result<String, String> {
+    fn visit_binary_expr(&mut self, expr: &Binary) -> Result<String, RuntimeError> {
         let mut expressions: Vec<&Expr> = vec![];
         expressions.push(&*expr.left);
         expressions.push(&*expr.right);
         return self.format_expressions(&expr.operator.lexeme, &expressions);
     }
 
-    fn visit_unary_expr(&mut self, expr: &Unary) -> Result<String, String> {
+    fn visit_unary_expr(&mut self, expr: &Unary) -> Result<String, RuntimeError> {
         return self.format_expression(&expr.operator.lexeme, &expr.right);
     }
 
-    fn visit_literal_expr(&mut self, expr: &Literal) -> Result<String, String> {
+    fn visit_literal_expr(&mut self, expr: &Literal) -> Result<String, RuntimeError> {
         match &expr.value {
             LiteralType::String(s) => return Ok(s.clone()),
             LiteralType::Float(f) => return Ok(f.to_string()),
@@ -89,16 +91,20 @@ impl ExprVisitor<String> for AstPrinter {
         }
     }
 
-    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<String, String> {
+    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<String, RuntimeError> {
         return self.format_expression(&String::from("grouping"), &expr.expression);
     }
 }
 
 impl AstPrinter {
-    pub fn print(&mut self, expr: Expr) -> Result<String, String> {
+    pub fn print(&mut self, expr: Expr) -> Result<String, RuntimeError> {
         return expr.accept(self);
     }
-    fn format_expressions(&mut self, name: &String, exprs: &Vec<&Expr>) -> Result<String, String> {
+    fn format_expressions(
+        &mut self,
+        name: &String,
+        exprs: &Vec<&Expr>,
+    ) -> Result<String, RuntimeError> {
         let mut result = String::new();
         result += "(";
         result += name.as_str();
@@ -109,7 +115,7 @@ impl AstPrinter {
         result += ")";
         return Ok(result);
     }
-    fn format_expression(&mut self, name: &String, expr: &Expr) -> Result<String, String> {
+    fn format_expression(&mut self, name: &String, expr: &Expr) -> Result<String, RuntimeError> {
         let mut result = String::new();
         result += "(";
         result += name.as_str();

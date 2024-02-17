@@ -112,7 +112,7 @@ impl Scanner {
                 } else {
                     let mut error_message = String::from("Unexpected character. ");
                     error_message.push(c);
-                    report_error(self.line, error_message);
+                    report_error(self.line, &error_message);
                     self.error = true;
                 }
             }
@@ -180,7 +180,7 @@ impl Scanner {
             self.current += 1;
         }
         if self.is_at_end() {
-            report_error(self.line, String::from("Unterminated string literal"));
+            report_error(self.line, &String::from("Unterminated string literal"));
             return;
         }
         self.current += 1;

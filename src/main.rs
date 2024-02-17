@@ -6,14 +6,10 @@ use parser::{
     interpreter::{self, Interpreter, RuntimeError},
     parser::Parser,
 };
-use scanner::token::Token;
 
-use crate::parser::expression::AstPrinter;
-
-fn report_error(line: i32, message: String) {
+fn report_error(line: i32, message: &str) {
     println!("[line {line}] Error: {message}");
 }
-
 fn main() {
     let args: Vec<String> = env::args().collect();
 
@@ -87,16 +83,11 @@ fn run(source: String) {
         Some(e) => e,
     };
 
-    // let mut interpreter = Interpreter {
-    //     runtime_error: RuntimeError {
-    //         message: String::from(""),
-    //         token: ,
-    //     },
-    // };
-    // match interpreter.interpret(expression) {
-    //     Ok(s) => println!("{}", s),
-    //     Err(e) => report_error(1, e),
-    // }
+    let mut interpreter = Interpreter {};
+    match interpreter.interpret(expression) {
+        Ok(s) => println!("{}", s),
+        Err(e) => report_error(e.line, &e.message),
+    }
     // let mut printer: AstPrinter = AstPrinter {};
     // println!("{}", printer.print(expression).unwrap());
     // for t in tokens.iter() {

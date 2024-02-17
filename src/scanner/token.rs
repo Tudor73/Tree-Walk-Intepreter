@@ -1,6 +1,8 @@
 use lazy_static::lazy_static;
 use std::{cmp::Ordering, collections::HashMap, fmt, ops::Add};
 
+use crate::parser::interpreter::RuntimeError;
+
 #[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
@@ -120,14 +122,19 @@ impl fmt::Debug for LiteralType {
 }
 
 impl LiteralType {
-    pub fn get_number(&self) -> Result<f32, String> {
+    pub fn get_number(&self, line: &i32) -> Result<f32, RuntimeError> {
         match self {
             LiteralType::Float(f) => return Ok(f.clone()),
-            _ => return Err(String::from("Operand must be a number")),
+            _ => {
+                return Err(RuntimeError::error(
+                    *line,
+                    "Operand must be a number".to_string(),
+                ))
+            }
         }
     }
 
-    pub fn get_string(&self) -> Result<String, String> {
+    pub fn get_string(&self, line: &i32) -> Result<String, String> {
         match self {
             LiteralType::String(f) => return Ok(f.clone()),
             _ => return Err(String::from("Operand must be a number")),

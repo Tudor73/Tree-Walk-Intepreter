@@ -1,4 +1,7 @@
-use crate::scanner::token::{LiteralType, Token, TokenType};
+use crate::{
+    report_error,
+    scanner::token::{LiteralType, TokenType},
+};
 
 use super::expression::{self, Expr, ExprVisitor, Grouping, Literal};
 
@@ -6,79 +9,94 @@ use super::expression::{self, Expr, ExprVisitor, Grouping, Literal};
 
 pub struct RuntimeError {
     pub message: String,
-    pub token: Token,
+    pub line: i32,
 }
 
-pub struct Interpreter {
-    pub runtime_error: RuntimeError,
+impl RuntimeError {
+    pub fn error(line: i32, message: String) -> RuntimeError {
+        let err = RuntimeError {
+            message: message.clone(),
+            line,
+        };
+        report_error(line, &message);
+        return err;
+    }
 }
+
+pub struct Interpreter;
 
 impl ExprVisitor<LiteralType> for Interpreter {
-    fn visit_literal_expr(&mut self, expr: &Literal) -> Result<LiteralType, String> {
+    fn visit_literal_expr(&mut self, expr: &Literal) -> Result<LiteralType, RuntimeError> {
         return Ok(expr.value.clone());
     }
 
-    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<LiteralType, String> {
+    fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<LiteralType, RuntimeError> {
         return self.evaluate(&expr.expression);
     }
 
-    fn visit_unary_expr(&mut self, expr: &expression::Unary) -> Result<LiteralType, String> {
+    fn visit_unary_expr(&mut self, expr: &expression::Unary) -> Result<LiteralType, RuntimeError> {
         let right: LiteralType = self.evaluate(&expr.right)?;
 
         match expr.operator.token_type {
             TokenType::MINUS => {
-                let value = right.get_number()?;
+                let value = right.get_number(&expr.operator.line)?;
                 return Ok(LiteralType::Float(-value));
             }
-            TokenType::BANG => return Ok(Interpreter::is_truthful(right)?),
-            _ => return Err(String::from("unreachable ")),
+            TokenType::BANG => return Ok(LiteralType::Bool(!Interpreter::is_truthful(right))),
+            _ => return Err(RuntimeError::error(0, String::from("unreachable "))),
         }
     }
-    fn visit_binary_expr(&mut self, expr: &expression::Binary) -> Result<LiteralType, String> {
+    fn visit_binary_expr(
+        &mut self,
+        expr: &expression::Binary,
+    ) -> Result<LiteralType, RuntimeError> {
         let left: LiteralType = self.evaluate(&expr.left)?;
         let right: LiteralType = self.evaluate(&expr.right)?;
 
         match expr.operator.token_type {
             TokenType::MINUS => {
-                let left_val = left.get_number()?;
-                let right_val = right.get_number()?;
+                let left_val = left.get_number(&expr.operator.line)?;
+                let right_val = right.get_number(&expr.operator.line)?;
                 return Ok(LiteralType::Float(left_val - right_val));
             }
             TokenType::SLASH => {
-                let left_val = left.get_number()?;
-                let right_val = right.get_number()?;
+                let left_val = left.get_number(&expr.operator.line)?;
+                let right_val = right.get_number(&expr.operator.line)?;
                 return Ok(LiteralType::Float(left_val / right_val));
             }
             TokenType::STAR => {
-                let left_val = left.get_number()?;
-                let right_val = right.get_number()?;
+                let left_val = left.get_number(&expr.operator.line)?;
+                let right_val = right.get_number(&expr.operator.line)?;
                 return Ok(LiteralType::Float(left_val * right_val));
             }
             TokenType::PLUS => {
                 let result = left + right;
-                return result;
+                match result {
+                    Ok(t) => return Ok(t),
+                    Err(s) => return Err(RuntimeError::error(expr.operator.line, s)),
+                }
             }
             TokenType::GREATER => {
-                let left_val = left.get_number()?;
-                let right_val = right.get_number()?;
+                let left_val = left.get_number(&expr.operator.line)?;
+                let right_val = right.get_number(&expr.operator.line)?;
                 let comparison = if left_val > right_val { true } else { false };
                 return Ok(LiteralType::Bool(comparison));
             }
             TokenType::GREATER_EQUAL => {
-                let left_val = left.get_number()?;
-                let right_val = right.get_number()?;
+                let left_val = left.get_number(&expr.operator.line)?;
+                let right_val = right.get_number(&expr.operator.line)?;
                 let comparison = if left_val >= right_val { true } else { false };
                 return Ok(LiteralType::Bool(comparison));
             }
             TokenType::LESS => {
-                let left_val = left.get_number()?;
-                let right_val = right.get_number()?;
+                let left_val = left.get_number(&expr.operator.line)?;
+                let right_val = right.get_number(&expr.operator.line)?;
                 let comparison = if left_val < right_val { true } else { false };
                 return Ok(LiteralType::Bool(comparison));
             }
             TokenType::LESS_EQUAL => {
-                let left_val = left.get_number()?;
-                let right_val = right.get_number()?;
+                let left_val = left.get_number(&expr.operator.line)?;
+                let right_val = right.get_number(&expr.operator.line)?;
                 let comparison = if left_val <= right_val { true } else { false };
                 return Ok(LiteralType::Bool(comparison));
             }
@@ -86,29 +104,29 @@ impl ExprVisitor<LiteralType> for Interpreter {
             TokenType::BANG_EQUAL => return Ok(LiteralType::Bool(left != right)),
             TokenType::EQUAL_EQUAL => return Ok(LiteralType::Bool(left == right)),
 
-            _ => return Err(String::from("unreachable ")),
+            _ => return Err(RuntimeError::error(0, String::from("unreachable "))),
         }
     }
 }
 
 impl Interpreter {
-    pub fn interpret(&mut self, expression: Expr) -> Result<String, String> {
+    pub fn interpret(&mut self, expression: Expr) -> Result<String, RuntimeError> {
         let value = self.evaluate(&expression);
         match value {
             Ok(e) => return Ok(Interpreter::stringify(e)),
-            Err(e) => {}
+            Err(e) => return Err(e),
         };
     }
 
-    fn evaluate(&mut self, expr: &Expr) -> Result<LiteralType, String> {
+    fn evaluate(&mut self, expr: &Expr) -> Result<LiteralType, RuntimeError> {
         expr.accept(self)
     }
 
-    fn is_truthful(literal: LiteralType) -> Result<LiteralType, String> {
+    fn is_truthful(literal: LiteralType) -> bool {
         match literal {
-            LiteralType::Bool(_) => return Ok(literal),
-            LiteralType::Null => return Ok(LiteralType::Bool(false)),
-            _ => return Ok(LiteralType::Bool(false)),
+            LiteralType::Bool(b) => return b,
+            LiteralType::Null => return false,
+            _ => return true,
         }
     }
     fn stringify(literal: LiteralType) -> String {

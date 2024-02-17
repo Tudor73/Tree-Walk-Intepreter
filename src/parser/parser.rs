@@ -1,11 +1,15 @@
-use std::vec;
+use std::{os::macos::raw::stat, vec};
 
 use crate::{
     report_error,
     scanner::token::{LiteralType, Token},
 };
 
-use super::expression::{Binary, Expr, Grouping, Literal, Unary};
+use super::{
+    expression::{Binary, Expr, Grouping, Literal, Unary},
+    interpreter::RuntimeError,
+    statements::{ExpressionStmt, PrintStmt, Stmt},
+};
 use crate::scanner::token::TokenType;
 
 pub struct Parser {
@@ -14,21 +18,40 @@ pub struct Parser {
 }
 
 impl Parser {
-    pub fn parse(&mut self) -> Option<Expr> {
-        match self.expression() {
-            Ok(e) => return Some(e),
-            Err(_) => return None,
+    pub fn parse(&mut self) -> Result<Vec<Stmt>, RuntimeError> {
+        let mut statements: Vec<Stmt> = Vec::new();
+        while !self.is_at_end() {
+            statements.push(self.statement()?)
         }
+        return Ok(statements);
     }
     pub fn new(tokens: Vec<Token>) -> Self {
         return Parser { tokens, current: 0 };
     }
 
-    fn expression(&mut self) -> Result<Expr, String> {
+    fn expression(&mut self) -> Result<Expr, RuntimeError> {
         return self.equality();
     }
 
-    fn equality(&mut self) -> Result<Expr, String> {
+    fn statement(&self) -> Result<Stmt, RuntimeError> {
+        if self.match_token(TokenType::PRINT) {
+            return self.print_statement();
+        }
+        return self.expression_statement();
+    }
+    fn print_statement(&self) -> Result<Stmt, RuntimeError> {
+        let value = self.expression()?;
+        self.consume(TokenType::SEMICOLON, "Expect ';' after value. ".to_string());
+        return Ok(Stmt::Print(PrintStmt { expression: value }));
+    }
+
+    fn expression_statement(&self) -> Result<Stmt, RuntimeError> {
+        let value = self.expression()?;
+        self.consume(TokenType::SEMICOLON, "Expect ';' after value. ".to_string());
+        return Ok(Stmt::Expression(ExpressionStmt { expression: value }));
+    }
+
+    fn equality(&mut self) -> Result<Expr, RuntimeError> {
         let mut expr = self.comparison()?;
         let types: Vec<TokenType> = std::vec![TokenType::EQUAL_EQUAL, TokenType::BANG_EQUAL];
         while self.match_tokens(&types) {
@@ -43,7 +66,7 @@ impl Parser {
         return Ok(expr);
     }
 
-    fn comparison(&mut self) -> Result<Expr, String> {
+    fn comparison(&mut self) -> Result<Expr, RuntimeError> {
         let mut expr = self.term()?;
         let types: Vec<TokenType> = vec![
             TokenType::LESS,
@@ -62,7 +85,7 @@ impl Parser {
         }
         return Ok(expr);
     }
-    fn term(&mut self) -> Result<Expr, String> {
+    fn term(&mut self) -> Result<Expr, RuntimeError> {
         let mut expr = self.factor()?;
         let types: Vec<TokenType> = vec![TokenType::MINUS, TokenType::PLUS];
         while self.match_tokens(&types) {
@@ -77,7 +100,7 @@ impl Parser {
         return Ok(expr);
     }
 
-    fn factor(&mut self) -> Result<Expr, String> {
+    fn factor(&mut self) -> Result<Expr, RuntimeError> {
         let mut expr = self.unary()?;
         let types: Vec<TokenType> = vec![TokenType::STAR, TokenType::SLASH];
         while self.match_tokens(&types) {
@@ -92,7 +115,7 @@ impl Parser {
         return Ok(expr);
     }
 
-    fn unary(&mut self) -> Result<Expr, String> {
+    fn unary(&mut self) -> Result<Expr, RuntimeError> {
         let types: Vec<TokenType> = vec![TokenType::BANG, TokenType::MINUS];
         if self.match_tokens(&types) {
             let operator = Parser::previous(self.tokens.clone(), self.current);
@@ -105,7 +128,7 @@ impl Parser {
         return self.primary();
     }
 
-    fn primary(&mut self) -> Result<Expr, String> {
+    fn primary(&mut self) -> Result<Expr, RuntimeError> {
         println!("{:?}", self.tokens[self.current]);
         if self.match_token(TokenType::FALSE) {
             return Ok(Expr::Literal(Literal {
@@ -143,17 +166,21 @@ impl Parser {
                 expression: Box::new(expr),
             }));
         } else {
-            Parser::error(self.peek().clone(), &"Expect expression".to_string());
-            return Err("Expect expression".to_string());
+            // NOTE: to specify the token need to do smth similar to the error function here
+            // Parser::error(self.peek().clone(), &"Expect expression".to_string());
+            return Err(RuntimeError::error(
+                self.peek().clone().line,
+                "Expect expression ".to_string(),
+            ));
         }
     }
 
-    fn consume(&mut self, token_type: TokenType, message: String) -> Result<Token, String> {
+    fn consume(&mut self, token_type: TokenType, message: String) -> Result<Token, RuntimeError> {
         if self.check(token_type) {
             return Ok(self.advance());
         }
-        Parser::error(self.peek().clone(), &message);
-        return Err(message);
+        // Parser::error(self.peek().clone(), &message);
+        return Err(RuntimeError::error(self.peek().clone().line, message));
     }
 
     fn error(token: Token, message: &String) {
@@ -161,13 +188,13 @@ impl Parser {
         if token.token_type == TokenType::EOF {
             error_string.push_str("at end ");
             error_string += message.as_str();
-            report_error(token.line, error_string);
+            report_error(token.line, &error_string);
         } else {
             error_string.push_str("at '");
             error_string.push_str(&token.lexeme);
             error_string.push_str("'");
             error_string += message.as_str();
-            report_error(token.line, error_string);
+            report_error(token.line, &error_string);
         }
     }
 
