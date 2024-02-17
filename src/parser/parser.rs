@@ -1,6 +1,7 @@
 use std::vec;
 
 use crate::{
+    parser::expression::Variable,
     report_error,
     scanner::token::{LiteralType, Token},
 };
@@ -8,7 +9,7 @@ use crate::{
 use super::{
     expression::{Binary, Expr, Grouping, Literal, Unary},
     interpreter::RuntimeError,
-    statements::{ExpressionStmt, PrintStmt, Stmt},
+    statements::{ExpressionStmt, PrintStmt, Stmt, Var},
 };
 use crate::scanner::token::TokenType;
 
@@ -18,15 +19,37 @@ pub struct Parser {
 }
 
 impl Parser {
+    pub fn new(tokens: Vec<Token>) -> Self {
+        return Parser { tokens, current: 0 };
+    }
+
     pub fn parse(&mut self) -> Result<Vec<Stmt>, RuntimeError> {
         let mut statements: Vec<Stmt> = Vec::new();
         while !self.is_at_end() {
-            statements.push(self.statement()?)
+            statements.push(self.declaration()?)
         }
-        return Ok(statements);
+        Ok(statements)
     }
-    pub fn new(tokens: Vec<Token>) -> Self {
-        return Parser { tokens, current: 0 };
+
+    pub fn declaration(&mut self) -> Result<Stmt, RuntimeError> {
+        // SYNCHRONIZE SHOULD GO HERE PROBABLY (inside match statements for these 2 functions)
+        if self.match_token(TokenType::VAR) {
+            return self.var_declaration();
+        }
+        self.statement()
+    }
+
+    pub fn var_declaration(&mut self) -> Result<Stmt, RuntimeError> {
+        let name = self.consume(TokenType::IDENTIFIER, "Expect variable name.".to_string())?;
+        let mut initializer = None;
+        if self.match_token(TokenType::EQUAL) {
+            initializer = Some(self.expression()?);
+        }
+        self.consume(
+            TokenType::SEMICOLON,
+            "Expect ';' after variable declaration.".to_string(),
+        )?;
+        return Ok(Stmt::Var(Var { name, initializer }));
     }
 
     fn expression(&mut self) -> Result<Expr, RuntimeError> {
@@ -154,6 +177,11 @@ impl Parser {
         if self.match_token(TokenType::STRING) {
             return Ok(Expr::Literal(Literal {
                 value: Parser::previous(self.tokens.clone(), self.current).literal,
+            }));
+        }
+        if self.match_token(TokenType::IDENTIFIER) {
+            return Ok(Expr::Variable(Variable {
+                name: Parser::previous(self.tokens.clone(), self.current),
             }));
         }
         if self.match_token(TokenType::LEFT_PAREN) {

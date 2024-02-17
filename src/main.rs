@@ -80,7 +80,7 @@ fn run(source: String) {
         Ok(e) => e,
     };
 
-    let mut interpreter = Interpreter {};
+    let mut interpreter = Interpreter::new();
     match interpreter.interpret(expression) {
         Err(e) => report_error(e.line, &e.message),
         _ => (),

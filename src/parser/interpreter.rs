@@ -5,7 +5,7 @@ use crate::{
 
 use super::{
     expression::{self, Expr, ExprVisitor, Grouping, Literal},
-    statements::{self, ExpressionStmt, Stmt, StmtVisitor},
+    statements::{self, Environment, ExpressionStmt, Stmt, StmtVisitor},
 };
 
 #[derive(Debug, Clone)]
@@ -26,7 +26,9 @@ impl RuntimeError {
     }
 }
 
-pub struct Interpreter;
+pub struct Interpreter {
+    environment: Environment,
+}
 
 impl ExprVisitor<LiteralType> for Interpreter {
     fn visit_literal_expr(&mut self, expr: &Literal) -> Result<LiteralType, RuntimeError> {
@@ -110,6 +112,12 @@ impl ExprVisitor<LiteralType> for Interpreter {
             _ => return Err(RuntimeError::error(0, String::from("unreachable "))),
         }
     }
+    fn visit_variable_expr(
+        &mut self,
+        expr: &expression::Variable,
+    ) -> Result<LiteralType, RuntimeError> {
+        self.environment.get(expr.name.clone())
+    }
 }
 
 impl StmtVisitor<()> for Interpreter {
@@ -122,14 +130,28 @@ impl StmtVisitor<()> for Interpreter {
         println!("{}", value);
         return Ok(());
     }
+
+    fn visit_var_statement(&mut self, stmt: &statements::Var) -> Result<(), RuntimeError> {
+        let mut value = LiteralType::Null;
+        if let Some(e) = stmt.initializer.clone() {
+            value = self.evaluate(&e)?;
+        }
+        Ok(self.environment.define(&stmt.name.lexeme, value))
+    }
 }
 
 impl Interpreter {
+    pub fn new() -> Interpreter {
+        return Interpreter {
+            environment: Environment::new(),
+        };
+    }
     pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<(), RuntimeError> {
         for stmt in statements.iter() {
             match stmt {
                 Stmt::Expression(e) => e.accept(self)?,
                 Stmt::Print(e) => e.accept(self)?,
+                Stmt::Var(v) => v.accept(self)?,
             };
         }
         return Ok(());
