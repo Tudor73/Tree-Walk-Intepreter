@@ -8,6 +8,7 @@ pub enum Expr {
     Literal(Literal),
     Grouping(Grouping),
     Variable(Variable),
+    Assign(Assign),
 }
 #[derive(Debug, Clone)]
 pub struct Binary {
@@ -15,6 +16,13 @@ pub struct Binary {
     pub left: Box<Expr>,
     pub right: Box<Expr>,
 }
+
+#[derive(Debug, Clone)]
+pub struct Assign {
+    pub name: Token,
+    pub value: Box<Expr>,
+}
+
 #[derive(Debug, Clone)]
 pub struct Unary {
     pub operator: Token,
@@ -40,6 +48,7 @@ pub trait ExprVisitor<T> {
     fn visit_grouping_expr(&mut self, expr: &Grouping) -> Result<T, RuntimeError>;
     fn visit_literal_expr(&mut self, expr: &Literal) -> Result<T, RuntimeError>;
     fn visit_variable_expr(&mut self, expr: &Variable) -> Result<T, RuntimeError>;
+    fn visit_assign_expr(&mut self, expr: &Assign) -> Result<T, RuntimeError>;
 }
 
 impl Expr {
@@ -50,6 +59,7 @@ impl Expr {
             Expr::Literal(b) => b.accept(visitor),
             Expr::Grouping(b) => b.accept(visitor),
             Expr::Variable(v) => v.accept(visitor),
+            Expr::Assign(v) => v.accept(visitor),
         }
     }
 }
@@ -83,6 +93,11 @@ impl Variable {
     }
 }
 
+impl Assign {
+    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> Result<T, RuntimeError> {
+        return visitor.visit_assign_expr(self);
+    }
+}
 // pub struct AstPrinter;
 // impl ExprVisitor<String> for AstPrinter {
 //     fn visit_binary_expr(&mut self, expr: &Binary) -> Result<String, RuntimeError> {

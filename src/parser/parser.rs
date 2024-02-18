@@ -7,7 +7,7 @@ use crate::{
 };
 
 use super::{
-    expression::{Binary, Expr, Grouping, Literal, Unary},
+    expression::{Assign, Binary, Expr, Grouping, Literal, Unary},
     interpreter::RuntimeError,
     statements::{ExpressionStmt, PrintStmt, Stmt, Var},
 };
@@ -53,7 +53,27 @@ impl Parser {
     }
 
     fn expression(&mut self) -> Result<Expr, RuntimeError> {
-        return self.equality();
+        self.assignment()
+    }
+
+    fn assignment(&mut self) -> Result<Expr, RuntimeError> {
+        let expr = self.equality()?;
+
+        if self.match_token(TokenType::EQUAL) {
+            let equals = Parser::previous(self.tokens.clone(), self.current);
+            let value = self.assignment()?;
+            if let Expr::Variable(v) = expr {
+                return Ok(Expr::Assign(Assign {
+                    name: v.name,
+                    value: Box::new(value),
+                }));
+            }
+            return Err(RuntimeError::error(
+                equals.line,
+                "Invalid assignment target. ".to_string(),
+            ));
+        }
+        return Ok(expr);
     }
 
     fn statement(&mut self) -> Result<Stmt, RuntimeError> {

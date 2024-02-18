@@ -118,6 +118,14 @@ impl ExprVisitor<LiteralType> for Interpreter {
     ) -> Result<LiteralType, RuntimeError> {
         self.environment.get(expr.name.clone())
     }
+    fn visit_assign_expr(
+        &mut self,
+        expr: &expression::Assign,
+    ) -> Result<LiteralType, RuntimeError> {
+        let value = self.evaluate(&expr.value)?;
+        self.environment.assign(expr.name.clone(), value.clone())?;
+        Ok(value)
+    }
 }
 
 impl StmtVisitor<()> for Interpreter {

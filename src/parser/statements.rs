@@ -78,4 +78,13 @@ impl Environment {
             Some(v) => return Ok(v.clone()),
         }
     }
+    pub fn assign(&mut self, name: Token, value: LiteralType) -> Result<(), RuntimeError> {
+        if self.values.contains_key(&name.lexeme) {
+            self.values.insert(name.lexeme.clone(), value);
+        }
+        return Err(RuntimeError::error(
+            name.line,
+            String::from("Undefined variable '".to_string() + &name.lexeme + "'."),
+        ));
+    }
 }
