@@ -1,4 +1,5 @@
-var x = 5;
-var y = 6;
-print x + y;
+var x = 1;
 
+x = 1 + 2;
+
+print x;
