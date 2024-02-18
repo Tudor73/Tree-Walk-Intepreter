@@ -81,7 +81,7 @@ fn run(source: String) {
     };
 
     let mut interpreter = Interpreter::new();
-    match interpreter.interpret(expression) {
+    match interpreter.interpret(&expression) {
         Err(e) => report_error(e.line, &e.message),
         _ => (),
     }

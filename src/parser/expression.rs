@@ -42,6 +42,7 @@ pub struct Grouping {
 pub struct Variable {
     pub name: Token,
 }
+
 pub trait ExprVisitor<T> {
     fn visit_binary_expr(&mut self, expr: &Binary) -> Result<T, RuntimeError>;
     fn visit_unary_expr(&mut self, expr: &Unary) -> Result<T, RuntimeError>;

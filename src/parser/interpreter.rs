@@ -1,3 +1,5 @@
+use std::{env, os::macos::raw::stat, rc::Rc};
+
 use crate::{
     report_error,
     scanner::token::{LiteralType, TokenType},
@@ -146,6 +148,12 @@ impl StmtVisitor<()> for Interpreter {
         }
         Ok(self.environment.define(&stmt.name.lexeme, value))
     }
+    fn visit_block_stmt(&mut self, stmt: &statements::Block) -> Result<(), RuntimeError> {
+        self.execute_block(
+            stmt.statements.clone(),
+            Environment::new_with_enclosing(self.environment.clone()),
+        )
+    }
 }
 
 impl Interpreter {
@@ -154,15 +162,31 @@ impl Interpreter {
             environment: Environment::new(),
         };
     }
-    pub fn interpret(&mut self, statements: Vec<Stmt>) -> Result<(), RuntimeError> {
+    pub fn interpret(&mut self, statements: &Vec<Stmt>) -> Result<(), RuntimeError> {
         for stmt in statements.iter() {
             match stmt {
                 Stmt::Expression(e) => e.accept(self)?,
                 Stmt::Print(e) => e.accept(self)?,
                 Stmt::Var(v) => v.accept(self)?,
+                Stmt::Block(v) => v.accept(self)?,
             };
         }
         return Ok(());
+    }
+
+    fn execute_block(
+        &mut self,
+        statements: Vec<Stmt>,
+        environment: Environment,
+    ) -> Result<(), RuntimeError> {
+        let previous = self.environment.clone();
+        self.environment = environment;
+
+        for statement in statements {
+            statement.accept(self)?;
+        }
+        self.environment = previous.clone();
+        Ok(())
     }
 
     fn evaluate(&mut self, expr: &Expr) -> Result<LiteralType, RuntimeError> {

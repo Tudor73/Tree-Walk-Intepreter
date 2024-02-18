@@ -9,7 +9,7 @@ use crate::{
 use super::{
     expression::{Assign, Binary, Expr, Grouping, Literal, Unary},
     interpreter::RuntimeError,
-    statements::{ExpressionStmt, PrintStmt, Stmt, Var},
+    statements::{Block, ExpressionStmt, PrintStmt, Stmt, Var},
 };
 use crate::scanner::token::TokenType;
 
@@ -80,8 +80,27 @@ impl Parser {
         if self.match_token(TokenType::PRINT) {
             return self.print_statement();
         }
+        if self.match_token(TokenType::LEFT_BRACE) {
+            return Ok(Stmt::Block(Block {
+                statements: self.block()?,
+            }));
+        }
         return self.expression_statement();
     }
+
+    fn block(&mut self) -> Result<Vec<Stmt>, RuntimeError> {
+        let mut statments: Vec<Stmt> = vec![];
+
+        while !self.check(TokenType::RIGHT_BRACE) && !self.is_at_end() {
+            statments.push(self.declaration()?);
+        }
+        self.consume(
+            TokenType::RIGHT_BRACE,
+            "Expect '} at the end of block'".to_string(),
+        );
+        Ok(statments)
+    }
+
     fn print_statement(&mut self) -> Result<Stmt, RuntimeError> {
         let value = self.expression()?;
         self.consume(TokenType::SEMICOLON, "Expect ';' after value. ".to_string())?;
