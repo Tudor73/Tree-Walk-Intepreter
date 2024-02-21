@@ -47,7 +47,7 @@ impl ExprVisitor<LiteralType> for Interpreter {
                 let value = right.get_number(&expr.operator.line)?;
                 return Ok(LiteralType::Float(-value));
             }
-            TokenType::BANG => return Ok(LiteralType::Bool(!Interpreter::is_truthful(right))),
+            TokenType::BANG => return Ok(LiteralType::Bool(!Interpreter::is_truthful(&right))),
             _ => return Err(RuntimeError::error(0, String::from("unreachable "))),
         }
     }
@@ -126,6 +126,29 @@ impl ExprVisitor<LiteralType> for Interpreter {
         self.environment.assign(expr.name.clone(), value.clone())?;
         Ok(value)
     }
+
+    fn visit_logical_expr(
+        &mut self,
+        expr: &expression::Logical,
+    ) -> Result<LiteralType, RuntimeError> {
+        let left = self.evaluate(&expr.left)?;
+        let right = self.evaluate(&expr.right)?;
+        match expr.operator.token_type {
+            TokenType::OR => {
+                if Interpreter::is_truthful(&left) {
+                    return Ok(left);
+                }
+                return Ok(right);
+            }
+            TokenType::AND => {
+                if !Interpreter::is_truthful(&left) {
+                    return Ok(left);
+                }
+                return Ok(right);
+            }
+            _ => return Err(RuntimeError::error(0, String::from("unreachable "))),
+        }
+    }
 }
 
 impl StmtVisitor<()> for Interpreter {
@@ -154,7 +177,7 @@ impl StmtVisitor<()> for Interpreter {
     }
     fn visit_if_stmt(&mut self, stmt: &statements::If) -> Result<(), RuntimeError> {
         let result = self.evaluate(&stmt.condition)?;
-        if Interpreter::is_truthful(result) {
+        if Interpreter::is_truthful(&result) {
             stmt.then_branch.accept(self)?;
         } else if let Some(e) = stmt.else_branch.clone() {
             e.accept(self)?;
@@ -201,9 +224,9 @@ impl Interpreter {
         expr.accept(self)
     }
 
-    fn is_truthful(literal: LiteralType) -> bool {
+    fn is_truthful(literal: &LiteralType) -> bool {
         match literal {
-            LiteralType::Bool(b) => return b,
+            LiteralType::Bool(b) => return *b,
             LiteralType::Null => return false,
             _ => return true,
         }

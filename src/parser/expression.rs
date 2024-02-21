@@ -9,9 +9,17 @@ pub enum Expr {
     Grouping(Grouping),
     Variable(Variable),
     Assign(Assign),
+    Logical(Logical),
 }
 #[derive(Debug, Clone)]
 pub struct Binary {
+    pub operator: Token,
+    pub left: Box<Expr>,
+    pub right: Box<Expr>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Logical {
     pub operator: Token,
     pub left: Box<Expr>,
     pub right: Box<Expr>,
@@ -50,6 +58,7 @@ pub trait ExprVisitor<T> {
     fn visit_literal_expr(&mut self, expr: &Literal) -> Result<T, RuntimeError>;
     fn visit_variable_expr(&mut self, expr: &Variable) -> Result<T, RuntimeError>;
     fn visit_assign_expr(&mut self, expr: &Assign) -> Result<T, RuntimeError>;
+    fn visit_logical_expr(&mut self, expr: &Logical) -> Result<T, RuntimeError>;
 }
 
 impl Expr {
@@ -61,6 +70,7 @@ impl Expr {
             Expr::Grouping(b) => b.accept(visitor),
             Expr::Variable(v) => v.accept(visitor),
             Expr::Assign(v) => v.accept(visitor),
+            Expr::Logical(v) => v.accept(visitor),
         }
     }
 }
@@ -82,6 +92,11 @@ impl Literal {
     }
 }
 
+impl Logical {
+    pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> Result<T, RuntimeError> {
+        return visitor.visit_logical_expr(self);
+    }
+}
 impl Grouping {
     pub fn accept<T>(&self, visitor: &mut dyn ExprVisitor<T>) -> Result<T, RuntimeError> {
         return visitor.visit_grouping_expr(self);

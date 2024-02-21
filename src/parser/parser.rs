@@ -7,7 +7,7 @@ use crate::{
 };
 
 use super::{
-    expression::{Assign, Binary, Expr, Grouping, Literal, Unary},
+    expression::{Assign, Binary, Expr, Grouping, Literal, Logical, Unary},
     interpreter::RuntimeError,
     statements::{Block, ExpressionStmt, If, PrintStmt, Stmt, Var},
 };
@@ -50,26 +50,6 @@ impl Parser {
             "Expect ';' after variable declaration.".to_string(),
         )?;
         return Ok(Stmt::Var(Var { name, initializer }));
-    }
-
-    fn assignment(&mut self) -> Result<Expr, RuntimeError> {
-        let expr = self.equality()?;
-
-        if self.match_token(TokenType::EQUAL) {
-            let equals = Parser::previous(self.tokens.clone(), self.current);
-            let value = self.assignment()?;
-            if let Expr::Variable(v) = expr {
-                return Ok(Expr::Assign(Assign {
-                    name: v.name,
-                    value: Box::new(value),
-                }));
-            }
-            return Err(RuntimeError::error(
-                equals.line,
-                "Invalid assignment target. ".to_string(),
-            ));
-        }
-        return Ok(expr);
     }
 
     fn statement(&mut self) -> Result<Stmt, RuntimeError> {
@@ -133,6 +113,54 @@ impl Parser {
 
     fn expression(&mut self) -> Result<Expr, RuntimeError> {
         self.assignment()
+    }
+
+    fn assignment(&mut self) -> Result<Expr, RuntimeError> {
+        let expr = self.or()?;
+
+        if self.match_token(TokenType::EQUAL) {
+            let equals = Parser::previous(self.tokens.clone(), self.current);
+            let value = self.assignment()?;
+            if let Expr::Variable(v) = expr {
+                return Ok(Expr::Assign(Assign {
+                    name: v.name,
+                    value: Box::new(value),
+                }));
+            }
+            return Err(RuntimeError::error(
+                equals.line,
+                "Invalid assignment target. ".to_string(),
+            ));
+        }
+        return Ok(expr);
+    }
+
+    fn or(&mut self) -> Result<Expr, RuntimeError> {
+        let mut expr = self.and()?;
+        while self.match_token(TokenType::OR) {
+            let operator = Parser::previous(self.tokens.clone(), self.current.clone());
+            let right = self.and()?;
+            expr = Expr::Logical(Logical {
+                left: Box::new(expr),
+                operator: operator,
+                right: Box::new(right),
+            })
+        }
+        return Ok(expr);
+    }
+
+    fn and(&mut self) -> Result<Expr, RuntimeError> {
+        let mut expr = self.equality()?;
+        while self.match_token(TokenType::AND) {
+            let operator = Parser::previous(self.tokens.clone(), self.current.clone());
+            let right = self.equality()?;
+            expr = Expr::Logical(Logical {
+                left: Box::new(expr),
+                operator,
+                right: Box::new(right),
+            })
+        }
+        return Ok(expr);
     }
 
     fn equality(&mut self) -> Result<Expr, RuntimeError> {
