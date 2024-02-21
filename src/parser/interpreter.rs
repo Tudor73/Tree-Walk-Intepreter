@@ -1,5 +1,3 @@
-use std::{env, os::macos::raw::stat, rc::Rc};
-
 use crate::{
     report_error,
     scanner::token::{LiteralType, TokenType},
@@ -154,6 +152,15 @@ impl StmtVisitor<()> for Interpreter {
             Environment::new_with_enclosing(self.environment.clone()),
         )
     }
+    fn visit_if_stmt(&mut self, stmt: &statements::If) -> Result<(), RuntimeError> {
+        let result = self.evaluate(&stmt.condition)?;
+        if Interpreter::is_truthful(result) {
+            stmt.then_branch.accept(self)?;
+        } else if let Some(e) = stmt.else_branch.clone() {
+            e.accept(self)?;
+        }
+        return Ok(());
+    }
 }
 
 impl Interpreter {
@@ -169,6 +176,7 @@ impl Interpreter {
                 Stmt::Print(e) => e.accept(self)?,
                 Stmt::Var(v) => v.accept(self)?,
                 Stmt::Block(v) => v.accept(self)?,
+                Stmt::If(v) => v.accept(self)?,
             };
         }
         return Ok(());

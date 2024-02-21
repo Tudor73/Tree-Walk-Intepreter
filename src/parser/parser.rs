@@ -9,7 +9,7 @@ use crate::{
 use super::{
     expression::{Assign, Binary, Expr, Grouping, Literal, Unary},
     interpreter::RuntimeError,
-    statements::{Block, ExpressionStmt, PrintStmt, Stmt, Var},
+    statements::{Block, ExpressionStmt, If, PrintStmt, Stmt, Var},
 };
 use crate::scanner::token::TokenType;
 
@@ -52,10 +52,6 @@ impl Parser {
         return Ok(Stmt::Var(Var { name, initializer }));
     }
 
-    fn expression(&mut self) -> Result<Expr, RuntimeError> {
-        self.assignment()
-    }
-
     fn assignment(&mut self) -> Result<Expr, RuntimeError> {
         let expr = self.equality()?;
 
@@ -77,6 +73,9 @@ impl Parser {
     }
 
     fn statement(&mut self) -> Result<Stmt, RuntimeError> {
+        if self.match_token(TokenType::IF) {
+            return self.if_statement();
+        }
         if self.match_token(TokenType::PRINT) {
             return self.print_statement();
         }
@@ -86,6 +85,25 @@ impl Parser {
             }));
         }
         return self.expression_statement();
+    }
+    fn if_statement(&mut self) -> Result<Stmt, RuntimeError> {
+        self.consume(TokenType::LEFT_PAREN, "Expect '(' after if. ".to_string())?;
+        let condition = self.expression()?;
+        self.consume(TokenType::RIGHT_PAREN, "Expect ')' after if. ".to_string())?;
+        let then_branch = self.statement()?;
+        if self.match_token(TokenType::ELSE) {
+            return Ok(Stmt::If(If {
+                condition: condition,
+                then_branch: Box::new(then_branch),
+                else_branch: Some(Box::new(self.statement()?)),
+            }));
+        } else {
+            return Ok(Stmt::If(If {
+                condition: condition,
+                then_branch: Box::new(then_branch),
+                else_branch: None,
+            }));
+        }
     }
 
     fn block(&mut self) -> Result<Vec<Stmt>, RuntimeError> {
@@ -111,6 +129,10 @@ impl Parser {
         let value = self.expression()?;
         self.consume(TokenType::SEMICOLON, "Expect ';' after value. ".to_string())?;
         return Ok(Stmt::Expression(ExpressionStmt { expression: value }));
+    }
+
+    fn expression(&mut self) -> Result<Expr, RuntimeError> {
+        self.assignment()
     }
 
     fn equality(&mut self) -> Result<Expr, RuntimeError> {

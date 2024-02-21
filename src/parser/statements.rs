@@ -10,6 +10,7 @@ pub enum Stmt {
     Print(PrintStmt),
     Var(Var),
     Block(Block),
+    If(If),
 }
 
 impl Stmt {
@@ -19,6 +20,7 @@ impl Stmt {
             Stmt::Print(e) => e.accept(visitor),
             Stmt::Var(v) => v.accept(visitor),
             Stmt::Block(v) => v.accept(visitor),
+            Stmt::If(v) => v.accept(visitor),
         }
     }
 }
@@ -42,11 +44,19 @@ pub struct Block {
     pub statements: Vec<Stmt>,
 }
 
+#[derive(Debug, Clone)]
+pub struct If {
+    pub condition: Expr,
+    pub then_branch: Box<Stmt>,
+    pub else_branch: Option<Box<Stmt>>,
+}
+
 pub trait StmtVisitor<T> {
     fn visit_expression_stmt(&mut self, stmt: &ExpressionStmt) -> Result<T, RuntimeError>;
     fn visit_print_statment(&mut self, stmt: &PrintStmt) -> Result<T, RuntimeError>;
     fn visit_var_statement(&mut self, stmt: &Var) -> Result<T, RuntimeError>;
     fn visit_block_stmt(&mut self, stmt: &Block) -> Result<T, RuntimeError>;
+    fn visit_if_stmt(&mut self, stmt: &If) -> Result<T, RuntimeError>;
 }
 
 impl ExpressionStmt {
@@ -69,6 +79,12 @@ impl Var {
 impl Block {
     pub fn accept<T>(&self, visitor: &mut dyn StmtVisitor<T>) -> Result<T, RuntimeError> {
         return visitor.visit_block_stmt(self);
+    }
+}
+
+impl If {
+    pub fn accept<T>(&self, visitor: &mut dyn StmtVisitor<T>) -> Result<T, RuntimeError> {
+        return visitor.visit_if_stmt(self);
     }
 }
 #[derive(Debug, Clone)]
